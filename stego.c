@@ -3,11 +3,15 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <sys/stat.h>
+#include <string.h>
 
 int main (int argc, char **argv) {
   FILE *msg, *image_changed, *image;
+  struct stat st;
   unsigned char pixel_part, pixel_changed_part, character, a, b, rgorb = 0; // r = 0, g = 1, b = 2;
-  int i = 0, loaded = 0;
+  int i = 0, loaded = 0, msg_size;
+  char* msg_size_s[10], msg_size_ss[10];
 
   // hiding option chosen
   if (argv[1][0] == 'h') {
@@ -21,6 +25,42 @@ int main (int argc, char **argv) {
       fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
       ++i;
     } fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
+
+    // najpierw sprawdz wielkosc wiadomosci
+    stat(argv[2], &st);
+    msg_size = st.st_size; // 118048
+
+    // cipher the size of the message - first how many cyferek and than the number
+    sprintf(msg_size_s, "%d", msg_size);
+    sprintf(msg_size_ss, "%d", strlen(msg_size_s));
+    strcat(msg_size_ss, msg_size_s);
+    msg_size = strlen(msg_size_ss);
+
+    // cipher the size of the message into the image
+    i = 0;
+    while((i < msg_size) && fread(&pixel_part, sizeof(unsigned char), 1, image)) {
+      // take one letter from the size string if we are handling a new pixel
+      if (rgorb == 0) { character = msg_size_ss[i++]; }
+      switch (rgorb) {
+        case 0: // red, the first part - change 3 last bits
+          a = (0b11100000 & character);
+          a = a >> 5;
+          b = (0b11111000 & pixel_part);
+        break;
+        case 1: // green, the second part - change 3 last bits
+          a = (0b00011100 & character);
+          a = a >> 2;
+          b = (0b11111000 & pixel_part);
+        break;
+        case 2: // blue, the third part - change 2 last bits
+          a = (0b00000011 & character);
+          b = (0b11111100 & pixel_part);
+        break;
+      }
+      pixel_changed_part = (a | b);
+      fwrite(&pixel_changed_part, sizeof(unsigned char), 1, image_changed); // write the pixel's part with changes
+      rgorb += 1; rgorb %= 3; // what will be the next pixel's part - r, g or b?
+    }
 
     // copying the rest of the image with changes
     while(fread(&pixel_part, sizeof(unsigned char), 1, image)) {
@@ -49,7 +89,7 @@ int main (int argc, char **argv) {
       rgorb += 1; rgorb %= 3; // what will be the next pixel's part - r, g or b?
     } fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
 
-    // copying the header
+    // copying the rest
     while(fread(&pixel_part, sizeof(unsigned char), 1, image)) {
       fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
     }
