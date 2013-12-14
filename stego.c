@@ -159,13 +159,35 @@ int main (int argc, char **argv) {
           for(i = 1; i <= msg_size; i++) {
             read_msg_size += (int)pow(10, (i-1)) * (int)(msg_size_s[msg_size - i] - '0');
           }
-          printf("%d\n", read_msg_size);
           break;
         }
       }
     }
 
     // read every pixel part
+    i = 0;
+    while( (i < read_msg_size * 3) && fread(&pixel_part, sizeof(unsigned char), 1, image)) {
+      switch (rgorb) {
+        case 0: // red, the first part - change 3 last bits
+          character = 0b00000000;
+          a = (0b00000111 & pixel_part);
+          a <<= 5;
+        break;
+        case 1: // green, the second part - change 3 last bits
+          a = (0b00000111 & pixel_part);
+          a <<= 2;
+        break;
+        case 2: // blue, the third part - change 2 last bits
+          a = (0b00000011 & pixel_part);
+        break;
+      }
+      character |= a;
+      rgorb += 1; rgorb %= 3; // what will be the next pixel's part - r, g or b?
+      ++i;
+      if (rgorb == 0) { // whole char found
+        fwrite(&character, sizeof(char), 1, msg);
+      }
+    }
 
     // read end of the pixel part
 
