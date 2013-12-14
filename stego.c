@@ -10,7 +10,7 @@ int main (int argc, char **argv) {
   FILE *msg, *image_changed, *image;
   struct stat st;
   unsigned char pixel_part, pixel_changed_part, character, a, b, rgorb = 0; // r = 0, g = 1, b = 2;
-  int i = 0, loaded = 0, msg_size;
+  int i = 0, loaded = 0, msg_size, read_msg_size = 0;
   char* msg_size_s[10], msg_size_ss[10];
 
   // hiding option chosen
@@ -154,9 +154,12 @@ int main (int argc, char **argv) {
       rgorb += 1; rgorb %= 3; // what will be the next pixel's part - r, g or b?
       ++i;
       if (rgorb == 0) {
-        msg_size_s[i/3] = character; // to nie dziala
-        if (i == msg_size * 3 - 1) {
-          printf("%s\n", msg_size_s); // to nie dziala
+        msg_size_s[i/3 - 1] = character;
+        if (i == msg_size * 3) {
+          for(i = 1; i <= msg_size; i++) {
+            read_msg_size += (int)pow(10, (i-1)) * (int)(msg_size_s[msg_size - i] - '0');
+          }
+          printf("%d\n", read_msg_size);
           break;
         }
       }
