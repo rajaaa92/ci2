@@ -6,7 +6,7 @@
 
 int main (int argc, char **argv) {
   FILE *msg, *image_changed, *image;
-  unsigned char pixel_part, pixel_changed_part, character, a, b, rgorb = 0; // r = 0, g = 1, b = 2;
+  unsigned char pixel_part, pixel_changed_part, first_part, character, a, b, rgorb = 0; // r = 0, g = 1, b = 2;
   int i = 0, loaded = 0;
 
   // hiding option chosen
@@ -25,6 +25,11 @@ int main (int argc, char **argv) {
     // copying the rest of the image with changes
     while(fread(&pixel_part, sizeof(unsigned char), 1, image)) {
       // take one letter from the msg if we are handling a new pixel
+      if (rgorb == 0) { first_part = pixel_part; }
+      if (first_part > 250) { // white is visible - skip ciphering in this pixel
+        fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
+        continue;
+      }
       if (rgorb == 0) { loaded = fread(&character, sizeof(unsigned char), 1, msg); }
       if (loaded == 0) { break; } // if there is no msg left - dont change the pixels
       // which part of the pixel will we change now?
@@ -49,7 +54,7 @@ int main (int argc, char **argv) {
       rgorb += 1; rgorb %= 3; // what will be the next pixel's part - r, g or b?
     } fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
 
-    // copying the header
+    // copying the rest of the image after the msg
     while(fread(&pixel_part, sizeof(unsigned char), 1, image)) {
       fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
     }
