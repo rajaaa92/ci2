@@ -6,7 +6,7 @@
 
 int main (int argc, char **argv) {
   FILE *msg, *image_changed, *image;
-  unsigned char pixel_part, pixel_changed_part, character, a, b, rgorb = 0; // r = 0, g = 1, b = 2;
+  unsigned char pixel_part, pixel_changed_part, character, a, b, interval = 0, rgorb = 0; // r = 0, g = 1, b = 2;
   int i = 0, loaded = 0;
 
   // hiding option chosen
@@ -25,28 +25,35 @@ int main (int argc, char **argv) {
     // copying the rest of the image with changes
     while(fread(&pixel_part, sizeof(unsigned char), 1, image)) {
       // take one letter from the msg if we are handling a new pixel
-      if (rgorb == 0) { loaded = fread(&character, sizeof(unsigned char), 1, msg); }
+      if ((rgorb == 0) && (interval % 9 == 0)) { loaded = fread(&character, sizeof(unsigned char), 1, msg); }
       if (loaded == 0) { break; } // if there is no msg left - dont change the pixels
       // which part of the pixel will we change now?
-      switch (rgorb) {
-        case 0: // red, the first part - change 3 last bits
-          a = (0b11100000 & character);
-          a = a >> 5;
-          b = (0b11111000 & pixel_part);
-        break;
-        case 1: // green, the second part - change 3 last bits
-          a = (0b00011100 & character);
-          a = a >> 2;
-          b = (0b11111000 & pixel_part);
-        break;
-        case 2: // blue, the third part - change 2 last bits
-          a = (0b00000011 & character);
-          b = (0b11111100 & pixel_part);
-        break;
+      if (interval < 3) {
+        switch (rgorb) {
+          case 0: // red, the first part - change 3 last bits
+            a = (0b11100000 & character);
+            a >>= 5;
+            b = (0b11111000 & pixel_part);
+          break;
+          case 1: // green, the second part - change 3 last bits
+            a = (0b00011100 & character);
+            a >>= 2;
+            b = (0b11111000 & pixel_part);
+          break;
+          case 2: // blue, the third part - change 2 last bits
+            a = (0b00000011 & character);
+            b = (0b11111100 & pixel_part);
+          break;
+        }
+        pixel_changed_part = (a | b);
+        fwrite(&pixel_changed_part, sizeof(unsigned char), 1, image_changed); // write the pixel's part with changes
+        rgorb += 1; rgorb %= 3; // what will be the next pixel's part - r, g or b?
+        ++interval;
+      } else {
+        fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
+        ++interval;
       }
-      pixel_changed_part = (a | b);
-      fwrite(&pixel_changed_part, sizeof(unsigned char), 1, image_changed); // write the pixel's part with changes
-      rgorb += 1; rgorb %= 3; // what will be the next pixel's part - r, g or b?
+      interval %= 9;
     } fwrite(&pixel_part, sizeof(unsigned char), 1, image_changed);
 
     // copying the header
