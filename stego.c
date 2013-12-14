@@ -107,6 +107,42 @@ int main (int argc, char **argv) {
     // skipping the header
     while(fread(&pixel_part, sizeof(unsigned char), 1, image) && (i < 73)) { ++i; }
 
+    // read the size of the message size
+    while(fread(&pixel_part, sizeof(unsigned char), 1, image)) {
+      switch (rgorb) {
+        case 0: // red, the first part - change 3 last bits
+          character = 0b00000000;
+          a = (0b00000111 & pixel_part);
+          a <<= 5;
+        break;
+        case 1: // green, the second part - change 3 last bits
+          a = (0b00000111 & pixel_part);
+          a <<= 2;
+        break;
+        case 2: // blue, the third part - change 2 last bits
+          a = (0b00000011 & pixel_part);
+        break;
+      }
+      character |= a;
+      rgorb += 1; rgorb %= 3; // what will be the next pixel's part - r, g or b?
+      if (rgorb == 0) {
+        msg_size = character - '0';
+        printf("%d\n", msg_size);
+        break;
+      }
+    }
+
+    // read the message size
+    // zbierz nastepne msg_size charow zeby poznac wielkosc wiadomosci
+
+    // read every pixel part
+
+    // read end of the pixel part
+
+    // i sklej z tego chara
+
+    // chara dodaj do wyjsciowego mesega
+
     fclose(msg);
     fclose(image);
   }
