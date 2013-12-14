@@ -65,7 +65,15 @@ int main (int argc, char **argv) {
 
   // decoding option chosen
   } else if (argv[1][0] == 'u') {
-    printf("u\n");
+    printf("rescuing the message from the image...\n");
+    image = fopen(argv[2], "r");
+    msg = fopen(argv[3], "w");
+
+    // skipping the header
+    while(fread(&pixel_part, sizeof(unsigned char), 1, image) && (i < 73)) { ++i; }
+
+    fclose(msg);
+    fclose(image);
   }
   return 0;
 }
