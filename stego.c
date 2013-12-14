@@ -38,7 +38,7 @@ int main (int argc, char **argv) {
 
     // cipher the size of the message into the image
     i = 0;
-    while((i < msg_size) && fread(&pixel_part, sizeof(unsigned char), 1, image)) {
+    while( ((i < msg_size) || ((rgorb > 0) && (i = msg_size))) && fread(&pixel_part, sizeof(unsigned char), 1, image)) {
       // take one letter from the size string if we are handling a new pixel
       if (rgorb == 0) { character = msg_size_ss[i++]; }
       switch (rgorb) {
